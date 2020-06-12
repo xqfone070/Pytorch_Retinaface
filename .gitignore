@@ -1,0 +1,5 @@
+/.idea
+/logs
+/train_weights
+/weights
+/keep_alive.txt
