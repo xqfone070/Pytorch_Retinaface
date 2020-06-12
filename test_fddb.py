@@ -193,11 +193,12 @@ if __name__ == '__main__':
                             cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
                 # landms
-                cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
-                cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
-                cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
-                cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
-                cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
+                landmark_num = cfg["landmark_num"]
+                landmark_colors = cfg["landmark_colors"]
+                for i in range(landmark_num):
+                    cv2.circle(img_raw, (b[5 + i * 2], b[5 + i * 2 + 1]), 1, landmark_colors[i], 4)
+
+
             # save image
             if not os.path.exists("./results/"):
                 os.makedirs("./results/")

@@ -29,9 +29,10 @@ class MultiBoxLoss(nn.Module):
         See: https://arxiv.org/pdf/1512.02325.pdf for more details.
     """
 
-    def __init__(self, num_classes, overlap_thresh, prior_for_matching, bkg_label, neg_mining, neg_pos, neg_overlap, encode_target):
+    def __init__(self, num_classes, landmark_num, overlap_thresh, prior_for_matching, bkg_label, neg_mining, neg_pos, neg_overlap, encode_target):
         super(MultiBoxLoss, self).__init__()
         self.num_classes = num_classes
+        self.landmark_num = landmark_num
         self.threshold = overlap_thresh
         self.background_label = bkg_label
         self.encode_target = encode_target
@@ -61,12 +62,12 @@ class MultiBoxLoss(nn.Module):
 
         # match priors (default boxes) and ground truth boxes
         loc_t = torch.Tensor(num, num_priors, 4)
-        landm_t = torch.Tensor(num, num_priors, 10)
+        landm_t = torch.Tensor(num, num_priors, self.landmark_num * 2)
         conf_t = torch.LongTensor(num, num_priors)
         for idx in range(num):
             truths = targets[idx][:, :4].data
             labels = targets[idx][:, -1].data
-            landms = targets[idx][:, 4:14].data
+            landms = targets[idx][:, 4:4 + self.landmark_num * 2].data
             defaults = priors.data
             match(self.threshold, truths, defaults, self.variance, labels, landms, loc_t, conf_t, landm_t, idx)
         if GPU:
@@ -76,13 +77,13 @@ class MultiBoxLoss(nn.Module):
 
         zeros = torch.tensor(0).cuda()
         # landm Loss (Smooth L1)
-        # Shape: [batch,num_priors,10]
+        # Shape: [batch,num_priors,self.landmark_num * 2]
         pos1 = conf_t > zeros
         num_pos_landm = pos1.long().sum(1, keepdim=True)
         N1 = max(num_pos_landm.data.sum().float(), 1)
         pos_idx1 = pos1.unsqueeze(pos1.dim()).expand_as(landm_data)
-        landm_p = landm_data[pos_idx1].view(-1, 10)
-        landm_t = landm_t[pos_idx1].view(-1, 10)
+        landm_p = landm_data[pos_idx1].view(-1, self.landmark_num * 2)
+        landm_t = landm_t[pos_idx1].view(-1, self.landmark_num * 2)
         loss_landm = F.smooth_l1_loss(landm_p, landm_t, reduction='sum')
 
 

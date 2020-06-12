@@ -37,6 +37,7 @@ elif args.network == "resnet50":
 
 rgb_mean = (104, 117, 123) # bgr order
 num_classes = 2
+landmark_num = cfg["landmark_num"]
 img_dim = cfg['image_size']
 num_gpu = cfg['ngpu']
 batch_size = cfg['batch_size']
@@ -79,7 +80,7 @@ cudnn.benchmark = True
 
 
 optimizer = optim.SGD(net.parameters(), lr=initial_lr, momentum=momentum, weight_decay=weight_decay)
-criterion = MultiBoxLoss(num_classes, 0.35, True, 0, True, 7, 0.35, False)
+criterion = MultiBoxLoss(num_classes, landmark_num, 0.35, True, 0, True, 7, 0.35, False)
 
 priorbox = PriorBox(cfg, image_size=(img_dim, img_dim))
 with torch.no_grad():
@@ -91,7 +92,7 @@ def train():
     epoch = 0 + args.resume_epoch
     print('Loading Dataset...')
 
-    dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean))
+    dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean), landmark_num)
 
     epoch_size = math.ceil(len(dataset) / batch_size)
     max_iter = max_epoch * epoch_size
@@ -109,7 +110,8 @@ def train():
             # create batch iterator
             batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
             if (epoch % 10 == 0 and epoch > 0) or (epoch % 5 == 0 and epoch > cfg['decay1']):
-                torch.save(net.state_dict(), save_folder + cfg['name']+ '_epoch_' + str(epoch) + '.pth')
+                fullname = os.path.join(save_folder, cfg['name']+ '_epoch_' + str(epoch) + '.pth')
+                torch.save(net.state_dict(), fullname)
             epoch += 1
 
         load_t0 = time.time()
@@ -138,7 +140,8 @@ def train():
               .format(epoch, max_epoch, (iteration % epoch_size) + 1,
               epoch_size, iteration + 1, max_iter, loss_l.item(), loss_c.item(), loss_landm.item(), lr, batch_time, str(datetime.timedelta(seconds=eta))))
 
-    torch.save(net.state_dict(), save_folder + cfg['name'] + '_Final.pth')
+    fullname = os.path.join(save_folder, cfg['name'] + '_Final.pth')
+    torch.save(net.state_dict(), fullname)
     # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
 
 

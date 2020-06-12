@@ -35,15 +35,15 @@ class BboxHead(nn.Module):
         return out.view(out.shape[0], -1, 4)
 
 class LandmarkHead(nn.Module):
-    def __init__(self,inchannels=512,num_anchors=3):
+    def __init__(self,inchannels=512,num_anchors=3, landmark_num=5):
         super(LandmarkHead,self).__init__()
-        self.conv1x1 = nn.Conv2d(inchannels,num_anchors*10,kernel_size=(1,1),stride=1,padding=0)
-
+        self.conv1x1 = nn.Conv2d(inchannels,num_anchors*landmark_num*2,kernel_size=(1,1),stride=1,padding=0)
+        self.landmark_num = landmark_num
     def forward(self,x):
         out = self.conv1x1(x)
         out = out.permute(0,2,3,1).contiguous()
 
-        return out.view(out.shape[0], -1, 10)
+        return out.view(out.shape[0], -1, self.landmark_num * 2)
 
 class RetinaFace(nn.Module):
     def __init__(self, cfg = None, phase = 'train'):
@@ -84,7 +84,7 @@ class RetinaFace(nn.Module):
 
         self.ClassHead = self._make_class_head(fpn_num=3, inchannels=cfg['out_channel'])
         self.BboxHead = self._make_bbox_head(fpn_num=3, inchannels=cfg['out_channel'])
-        self.LandmarkHead = self._make_landmark_head(fpn_num=3, inchannels=cfg['out_channel'])
+        self.LandmarkHead = self._make_landmark_head(fpn_num=3, inchannels=cfg['out_channel'], landmark_num=cfg['landmark_num'])
 
     def _make_class_head(self,fpn_num=3,inchannels=64,anchor_num=2):
         classhead = nn.ModuleList()
@@ -98,10 +98,10 @@ class RetinaFace(nn.Module):
             bboxhead.append(BboxHead(inchannels,anchor_num))
         return bboxhead
 
-    def _make_landmark_head(self,fpn_num=3,inchannels=64,anchor_num=2):
+    def _make_landmark_head(self,fpn_num=3,inchannels=64,anchor_num=2, landmark_num=5):
         landmarkhead = nn.ModuleList()
         for i in range(fpn_num):
-            landmarkhead.append(LandmarkHead(inchannels,anchor_num))
+            landmarkhead.append(LandmarkHead(inchannels,anchor_num, landmark_num))
         return landmarkhead
 
     def forward(self,inputs):

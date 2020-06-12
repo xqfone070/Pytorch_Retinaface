@@ -7,10 +7,13 @@ import cv2
 import numpy as np
 
 class WiderFaceDetection(data.Dataset):
-    def __init__(self, txt_path, preproc=None):
+    def __init__(self, txt_path, preproc=None, landmark_num = 5):
         self.preproc = preproc
         self.imgs_path = []
         self.words = []
+        self.landmark_num = landmark_num
+        # annotation_len    bbox: 4, landmark_data: landmark_num * 2, landmark_valid: 1
+        self.annotation_len = 4 + landmark_num * 2 + 1
         f = open(txt_path,'r')
         lines = f.readlines()
         isFirst = True
@@ -42,11 +45,11 @@ class WiderFaceDetection(data.Dataset):
         height, width, _ = img.shape
 
         labels = self.words[index]
-        annotations = np.zeros((0, 15))
+        annotations = np.zeros((0, self.annotation_len))
         if len(labels) == 0:
             return annotations
         for idx, label in enumerate(labels):
-            annotation = np.zeros((1, 15))
+            annotation = np.zeros((1, self.annotation_len))
             # bbox
             annotation[0, 0] = label[0]  # x1
             annotation[0, 1] = label[1]  # y1
@@ -54,20 +57,14 @@ class WiderFaceDetection(data.Dataset):
             annotation[0, 3] = label[1] + label[3]  # y2
 
             # landmarks
-            annotation[0, 4] = label[4]    # l0_x
-            annotation[0, 5] = label[5]    # l0_y
-            annotation[0, 6] = label[7]    # l1_x
-            annotation[0, 7] = label[8]    # l1_y
-            annotation[0, 8] = label[10]   # l2_x
-            annotation[0, 9] = label[11]   # l2_y
-            annotation[0, 10] = label[13]  # l3_x
-            annotation[0, 11] = label[14]  # l3_y
-            annotation[0, 12] = label[16]  # l4_x
-            annotation[0, 13] = label[17]  # l4_y
+            for i in range(self.landmark_num):
+                annotation[0,  4 + 2 * i] = label[4 + 3 * i]
+                annotation[0, 4 + 2 * i + 1] = label[4 + 3 * i + 1]
+
             if (annotation[0, 4]<0):
-                annotation[0, 14] = -1
+                annotation[0, -1] = -1
             else:
-                annotation[0, 14] = 1
+                annotation[0, -1] = 1
 
             annotations = np.append(annotations, annotation, axis=0)
         target = np.array(annotations)
