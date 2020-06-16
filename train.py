@@ -12,6 +12,7 @@ import time
 import datetime
 import math
 from models.retinaface import RetinaFace
+from data import Dataset300W
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
 parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
@@ -92,7 +93,8 @@ def train():
     epoch = 0 + args.resume_epoch
     print('Loading Dataset...')
 
-    dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean), landmark_num)
+    #dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean), landmark_num)
+    dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean), landmark_num)
 
     epoch_size = math.ceil(len(dataset) / batch_size)
     max_iter = max_epoch * epoch_size
@@ -130,7 +132,7 @@ def train():
         # backprop
         optimizer.zero_grad()
         loss_l, loss_c, loss_landm = criterion(out, priors, targets)
-        loss = cfg['loc_weight'] * loss_l + loss_c + loss_landm
+        loss = cfg['loc_weight'] * loss_l + loss_c + cfg['landmark_weight'] * loss_landm
         loss.backward()
         optimizer.step()
         load_t1 = time.time()

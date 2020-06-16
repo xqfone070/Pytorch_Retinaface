@@ -165,6 +165,72 @@ def _expand(image, boxes, fill, p):
 
     return image, boxes_t
 
+def _mirror_facial_landmark_5(landms, width, landmark_num):
+    landms = landms.copy()
+    landms = landms.reshape([-1, landmark_num, 2])
+    landms[:, :, 0] = width - landms[:, :, 0]
+    tmp = landms[:, 1, :].copy()
+    landms[:, 1, :] = landms[:, 0, :]
+    landms[:, 0, :] = tmp
+    tmp1 = landms[:, 4, :].copy()
+    landms[:, 4, :] = landms[:, 3, :]
+    landms[:, 3, :] = tmp1
+    landms = landms.reshape([-1, landmark_num * 2])
+    return landms
+
+
+def _mirror_facial_landmark_indices(landms, start, stop):
+    for i in range(start, int((stop - start) / 2)):
+        tmp = landms[:, i, :].copy()
+        mirror_idx = stop - i - 1
+        landms[:, i, :] = landms[:, mirror_idx, :]
+        landms[:, mirror_idx, :] = tmp
+
+
+def _mirror_facial_landmark_68(landms, width, landmark_num):
+    landms = landms.copy()
+    landms = landms.reshape([-1, landmark_num, 2])
+    landms[:, :, 0] = width - landms[:, :, 0]
+
+    # face
+    _mirror_facial_landmark_indices(landms, 0, 17)
+
+    # left eye blow
+    _mirror_facial_landmark_indices(landms, 17, 22)
+
+    # right eye blow
+    _mirror_facial_landmark_indices(landms, 22, 27)
+
+    # nose
+    _mirror_facial_landmark_indices(landms, 31, 36)
+
+    # left upper eye
+    _mirror_facial_landmark_indices(landms, 36, 40)
+
+    # left lower eye
+    _mirror_facial_landmark_indices(landms, 40, 42)
+
+    # right upper eye
+    _mirror_facial_landmark_indices(landms, 42, 46)
+
+    # right lower eye
+    _mirror_facial_landmark_indices(landms, 46, 48)
+
+    # outer upper mouth
+    _mirror_facial_landmark_indices(landms, 48, 55)
+
+    # outer lower mouth
+    _mirror_facial_landmark_indices(landms, 55, 60)
+
+    # inner upper mouth
+    _mirror_facial_landmark_indices(landms, 60, 65)
+
+    # inner lower mouth
+    _mirror_facial_landmark_indices(landms, 65, 68)
+
+    landms = landms.reshape([-1, landmark_num * 2])
+    return landms
+
 
 def _mirror(image, boxes, landms):
     _, width, _ = image.shape
@@ -177,17 +243,13 @@ def _mirror(image, boxes, landms):
         landmark_num =int(landms.shape[1] / 2)
 
         # if you changed the landmark_num , you should re-implement this function
-        assert landmark_num == 5
-        landms = landms.copy()
-        landms = landms.reshape([-1, landmark_num, 2])
-        landms[:, :, 0] = width - landms[:, :, 0]
-        tmp = landms[:, 1, :].copy()
-        landms[:, 1, :] = landms[:, 0, :]
-        landms[:, 0, :] = tmp
-        tmp1 = landms[:, 4, :].copy()
-        landms[:, 4, :] = landms[:, 3, :]
-        landms[:, 3, :] = tmp1
-        landms = landms.reshape([-1, landmark_num * 2])
+        if landmark_num == 5:
+            landms = _mirror_facial_landmark_5(landms, width, landmark_num)
+        elif landmark_num == 68:
+            landms = _mirror_facial_landmark_68(landms, width, landmark_num)
+        else:
+            print("mirror image, not implemented landmark_num")
+            assert False
 
     return image, boxes, landms
 

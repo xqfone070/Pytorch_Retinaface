@@ -3,3 +3,5 @@
 /train_weights
 /weights
 /keep_alive.txt
+/widerface_evaluate/widerface_txt
+/results
