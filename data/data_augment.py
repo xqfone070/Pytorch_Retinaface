@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import random
 from utils.box_utils import matrix_iof
+from utils.image_utils import show_bboxes
 
 
 def _crop(image, boxes, labels, landm, img_dim):
@@ -165,6 +166,7 @@ def _expand(image, boxes, fill, p):
 
     return image, boxes_t
 
+
 def _mirror_facial_landmark_5(landms, width, landmark_num):
     landms = landms.copy()
     landms = landms.reshape([-1, landmark_num, 2])
@@ -179,54 +181,66 @@ def _mirror_facial_landmark_5(landms, width, landmark_num):
     return landms
 
 
-def _mirror_facial_landmark_indices(landms, start, stop):
-    for i in range(start, int((stop - start) / 2)):
-        tmp = landms[:, i, :].copy()
-        mirror_idx = stop - i - 1
-        landms[:, i, :] = landms[:, mirror_idx, :]
-        landms[:, mirror_idx, :] = tmp
+def reverse_landmark_indeces(landms, start, stop):
+    if start >= 1:
+        landms[:, start:stop, :] = landms[:, stop-1:start-1:-1, :]
+    else:
+        landms[:, start:stop, :] = landms[:, stop - 1::-1, :]
 
 
+def swap_left_right(landms, left_range, right_range):
+    tmp = landms[:, left_range[0]:left_range[1], :].copy()
+    landms[:, left_range[0]:left_range[1], :] = landms[:, right_range[0]:right_range[1], :].copy()
+    landms[:, right_range[0]:right_range[1], :] = tmp
+
+# some bugs in landmarks of eye and eye blow
 def _mirror_facial_landmark_68(landms, width, landmark_num):
     landms = landms.copy()
     landms = landms.reshape([-1, landmark_num, 2])
     landms[:, :, 0] = width - landms[:, :, 0]
 
-    # face
-    _mirror_facial_landmark_indices(landms, 0, 17)
+    # contours
+    reverse_landmark_indeces(landms, 0, 17)
 
     # left eye blow
-    _mirror_facial_landmark_indices(landms, 17, 22)
+    reverse_landmark_indeces(landms, 17, 22)
 
     # right eye blow
-    _mirror_facial_landmark_indices(landms, 22, 27)
+    reverse_landmark_indeces(landms, 22, 27)
+
+    # swap left right eye blow
+    swap_left_right(landms, (17, 22), (22, 27))
 
     # nose
-    _mirror_facial_landmark_indices(landms, 31, 36)
+    reverse_landmark_indeces(landms, 31, 36)
+    landms[31:36, :] = landms[35:30:-1]
 
     # left upper eye
-    _mirror_facial_landmark_indices(landms, 36, 40)
+    reverse_landmark_indeces(landms, 36, 40)
 
     # left lower eye
-    _mirror_facial_landmark_indices(landms, 40, 42)
+    reverse_landmark_indeces(landms, 40, 42)
 
     # right upper eye
-    _mirror_facial_landmark_indices(landms, 42, 46)
+    reverse_landmark_indeces(landms, 42, 46)
 
     # right lower eye
-    _mirror_facial_landmark_indices(landms, 46, 48)
+    reverse_landmark_indeces(landms, 46, 48)
+
+    # swap left right eye
+    swap_left_right(landms, (36, 42), (42, 48))
 
     # outer upper mouth
-    _mirror_facial_landmark_indices(landms, 48, 55)
+    reverse_landmark_indeces(landms, 48, 55)
 
     # outer lower mouth
-    _mirror_facial_landmark_indices(landms, 55, 60)
+    reverse_landmark_indeces(landms, 55, 60)
 
     # inner upper mouth
-    _mirror_facial_landmark_indices(landms, 60, 65)
+    reverse_landmark_indeces(landms, 60, 65)
 
     # inner lower mouth
-    _mirror_facial_landmark_indices(landms, 65, 68)
+    reverse_landmark_indeces(landms, 65, 68)
 
     landms = landms.reshape([-1, landmark_num * 2])
     return landms
@@ -280,6 +294,7 @@ class preproc(object):
         self.img_dim = img_dim
         self.rgb_means = rgb_means
 
+
     def __call__(self, image, targets):
         assert targets.shape[0] > 0, "this image does not have gt"
 
@@ -287,10 +302,13 @@ class preproc(object):
         labels = targets[:, -1].copy()
         landm = targets[:, 4:-1].copy()
 
+
         image_t, boxes_t, labels_t, landm_t, pad_image_flag = _crop(image, boxes, labels, landm, self.img_dim)
+
         image_t = _distort(image_t)
         image_t = _pad_to_square(image_t,self.rgb_means, pad_image_flag)
         image_t, boxes_t, landm_t = _mirror(image_t, boxes_t, landm_t)
+        #show_bboxes(image_t, labels, boxes_t, landm_t, True, show_image_size=(1024, 1024))
         height, width, _ = image_t.shape
         image_t = _resize_subtract_mean(image_t, self.img_dim, self.rgb_means)
         boxes_t[:, 0::2] /= width

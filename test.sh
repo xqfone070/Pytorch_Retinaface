@@ -1,5 +1,13 @@
 #!/bin/sh
 source ~/pytorch_env/bin/activate
-#python test_widerface.py --trained_model ./train_weights/Resnet50_epoch_40.pth --network resnet50 --dataset_folder /data/backup/widerface_retinaface_gt_v1.1/val/images/ --save_image
-python test_dir.py --trained_model ./train_weights/Resnet50_Final.pth --network resnet50 --dataset_folder /home/alex/data/300W/01_Indoor --save_image
+
+weight_file=./train_weights/Resnet50_landmark68_Final.pth
+#dataset=/data/backup/widerface_retinaface_gt_v1.1/val/images/
+#dataset=/home/alex/data/facial_landmark/300W/01_Indoor
+dataset=/home/alex/data/facial_landmark/300w_merge_single_face/testset
+
+
+
+#python test_widerface.py --trained_model $weight_file --network resnet50 --dataset_folder $dataset --save_image
+python test_dir.py --trained_model $weight_file --network resnet50 --dataset_folder $dataset --save_image
 

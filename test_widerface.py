@@ -6,6 +6,7 @@ import torch.backends.cudnn as cudnn
 import numpy as np
 from data import cfg_mnet, cfg_re50
 from layers.functions.prior_box import PriorBox
+from utils.image_utils import draw_bboxes
 from utils.nms.py_cpu_nms import py_cpu_nms
 import cv2
 from models.retinaface import RetinaFace
@@ -195,25 +196,16 @@ if __name__ == '__main__':
 
         # save image
         if args.save_image:
-            for b in dets:
-                if b[4] < args.vis_thres:
-                    continue
-                text = "{:.4f}".format(b[4])
-                b = list(map(int, b))
-                cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
-                cx = b[0]
-                cy = b[1] + 12
-                cv2.putText(img_raw, text, (cx, cy),
-                            cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
-
-                # landms
-                landmark_num = cfg["landmark_num"]
-                landmark_colors = cfg["landmark_colors"]
-                for i in range(landmark_num):
-                    cv2.circle(img_raw, (b[5+i*2], b[5+i*2+1]), 1, landmark_colors[i], 4)
+            confs = dets[:, 4]
+            bboxes = dets[:, 0:4]
+            landms = dets[:, 5:]
+            draw_bboxes(img_raw, confs, bboxes, landms, draw_landm_index=True, conf_thresh=args.vis_thres)
             # save image
-            if not os.path.exists("./results/"):
-                os.makedirs("./results/")
-            name = "./results/" + str(i) + ".jpg"
+            save_image_dir = "./results"
+            if not os.path.exists(save_image_dir):
+                os.makedirs(save_image_dir)
+
+            file = str(i) + ".jpg"
+            name = os.path.join(save_image_dir, file)
             cv2.imwrite(name, img_raw)
 

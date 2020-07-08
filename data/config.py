@@ -7,7 +7,7 @@ cfg_mnet = {
     'variance': [0.1, 0.2],
     'clip': False,
     'loc_weight': 2.0,
-    'landmark_weight':0.2,
+    'landmark_weight':1.0,
     'gpu_train': True,
     'batch_size': 32,
     'ngpu': 1,
@@ -19,8 +19,7 @@ cfg_mnet = {
     'return_layers': {'stage1': 1, 'stage2': 2, 'stage3': 3},
     'in_channel': 32,
     'out_channel': 64,
-    'landmark_num': 68,
-    'landmark_colors': [(0, 0, 255), (0, 255, 255), (255, 0, 255), (0, 255, 0), (255, 0, 0)]
+    'landmark_num': 68
 }
 
 cfg_re50 = {
@@ -29,8 +28,8 @@ cfg_re50 = {
     'steps': [8, 16, 32],
     'variance': [0.1, 0.2],
     'clip': False,
-    'loc_weight': 2.0,
-    'landmark_weight':0.2,
+    'loc_weight': 1.0,
+    'landmark_weight':2.0,
     'gpu_train': True,
     'batch_size': 16,
     'ngpu': 4,
@@ -42,7 +41,6 @@ cfg_re50 = {
     'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3},
     'in_channel': 256,
     'out_channel': 256,
-    'landmark_num': 68,
-    'landmark_colors': [(0, 0, 255), (0, 255, 255), (255, 0, 255), (0, 255, 0), (255, 0, 0)]
+    'landmark_num': 68
 }
 

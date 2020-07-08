@@ -38,12 +38,12 @@ elif args.network == "resnet50":
 
 rgb_mean = (104, 117, 123) # bgr order
 num_classes = 2
-landmark_num = cfg["landmark_num"]
 img_dim = cfg['image_size']
 num_gpu = cfg['ngpu']
 batch_size = cfg['batch_size']
 max_epoch = cfg['epoch']
 gpu_train = cfg['gpu_train']
+landmark_num = cfg['landmark_num']
 
 num_workers = args.num_workers
 momentum = args.momentum
@@ -52,6 +52,7 @@ initial_lr = args.lr
 gamma = args.gamma
 training_dataset = args.training_dataset
 save_folder = args.save_folder
+
 
 net = RetinaFace(cfg=cfg)
 print("Printing net...")
@@ -79,15 +80,6 @@ else:
 
 cudnn.benchmark = True
 
-
-optimizer = optim.SGD(net.parameters(), lr=initial_lr, momentum=momentum, weight_decay=weight_decay)
-criterion = MultiBoxLoss(num_classes, landmark_num, 0.35, True, 0, True, 7, 0.35, False)
-
-priorbox = PriorBox(cfg, image_size=(img_dim, img_dim))
-with torch.no_grad():
-    priors = priorbox.forward()
-    priors = priors.cuda()
-
 def train():
     net.train()
     epoch = 0 + args.resume_epoch
@@ -95,6 +87,16 @@ def train():
 
     #dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean), landmark_num)
     dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean), landmark_num)
+    dataloader = data.DataLoader(dataset, batch_size, shuffle=True,
+                                 num_workers=num_workers, collate_fn=detection_collate)
+
+    optimizer = optim.SGD(net.parameters(), lr=initial_lr, momentum=momentum, weight_decay=weight_decay)
+    criterion = MultiBoxLoss(num_classes, landmark_num, 0.35, True, 0, True, 7, 0.35, False)
+
+    priorbox = PriorBox(cfg, image_size=(img_dim, img_dim))
+    with torch.no_grad():
+        priors = priorbox.forward()
+        priors = priors.cuda()
 
     epoch_size = math.ceil(len(dataset) / batch_size)
     max_iter = max_epoch * epoch_size
@@ -110,9 +112,9 @@ def train():
     for iteration in range(start_iter, max_iter):
         if iteration % epoch_size == 0:
             # create batch iterator
-            batch_iterator = iter(data.DataLoader(dataset, batch_size, shuffle=True, num_workers=num_workers, collate_fn=detection_collate))
+            batch_iterator = iter(dataloader)
             if (epoch % 10 == 0 and epoch > 0) or (epoch % 5 == 0 and epoch > cfg['decay1']):
-                fullname = os.path.join(save_folder, cfg['name']+ '_epoch_' + str(epoch) + '.pth')
+                fullname = os.path.join(save_folder, cfg['name'] + '_landmark' + str(landmark_num) + '_epoch_' + str(epoch) + '.pth')
                 torch.save(net.state_dict(), fullname)
             epoch += 1
 
@@ -142,9 +144,9 @@ def train():
               .format(epoch, max_epoch, (iteration % epoch_size) + 1,
               epoch_size, iteration + 1, max_iter, loss_l.item(), loss_c.item(), loss_landm.item(), lr, batch_time, str(datetime.timedelta(seconds=eta))))
 
-    fullname = os.path.join(save_folder, cfg['name'] + '_Final.pth')
+    fullname = os.path.join(save_folder, cfg['name'] + '_landmark' + str(landmark_num) + '_Final.pth')
     torch.save(net.state_dict(), fullname)
-    # torch.save(net.state_dict(), save_folder + 'Final_Retinaface.pth')
+    print("final finished!")
 
 
 def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_size):
@@ -160,6 +162,7 @@ def adjust_learning_rate(optimizer, gamma, epoch, step_index, iteration, epoch_s
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
     return lr
+
 
 if __name__ == '__main__':
     train()

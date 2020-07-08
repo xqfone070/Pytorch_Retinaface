@@ -6,14 +6,15 @@ import torch.utils.data as data
 import cv2
 import numpy as np
 
+
 class WiderFaceDetection(data.Dataset):
-    def __init__(self, txt_path, preproc=None, landmark_num = 5):
+    def __init__(self, txt_path, preproc=None, landmark_num=5):
         self.preproc = preproc
         self.imgs_path = []
         self.words = []
         self.landmark_num = landmark_num
         # annotation_len    bbox: 4, landmark_data: landmark_num * 2, landmark_valid: 1
-        self.annotation_len = 4 + landmark_num * 2 + 1
+        self.annotation_len = 4 + self.landmark_num * 2 + 1
         f = open(txt_path,'r')
         lines = f.readlines()
         isFirst = True

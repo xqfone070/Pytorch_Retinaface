@@ -6,6 +6,27 @@ import torch.utils.data as data
 import cv2
 import numpy as np
 
+
+def load_pts_file(filename):
+    with open(filename) as f:
+        lines = [line.strip() for line in f]
+
+    """Use the curly braces to find the start and end of the point data"""
+    head = lines.index('{') + 1
+    tail = lines.index('}')
+
+    """Select the point data split into coordinates"""
+    point_lines = lines[head:tail]
+    points = [point.split() for point in point_lines]
+    points = np.array(points).astype(np.float)
+    return points
+
+
+def generate_min_bbox(points):
+    box = np.array([points[:, 0].min(), points[:, 1].min(), points[:, 0].max(), points[:, 1].max()])
+    return box
+
+
 class Dataset300W(data.Dataset):
     def __init__(self, dataset_dir, preproc=None, landmark_num=68):
         self.preproc = preproc
@@ -13,7 +34,7 @@ class Dataset300W(data.Dataset):
         self.annotations_path = []
         self.landmark_num = landmark_num
         # annotation_len    bbox: 4, landmark_data: landmark_num * 2, landmark_valid: 1
-        self.annotation_len = 4 + landmark_num * 2 + 1
+        self.annotation_len = 4 + self.landmark_num * 2 + 1
 
         filelist = os.listdir(dataset_dir)
         for file in filelist:
@@ -26,17 +47,19 @@ class Dataset300W(data.Dataset):
                 self.imgs_path.append(image_file)
                 self.annotations_path.append(pts_file)
 
+
     def __len__(self):
         return len(self.imgs_path)
+
 
     def __getitem__(self, index):
         img = cv2.imread(self.imgs_path[index])
         height, width, _ = img.shape
 
         annotations = np.zeros((0, self.annotation_len))
-        points = self.load_annotation(self.annotations_path[index])
+        points = load_pts_file(self.annotations_path[index])
         assert points.shape[0] == self.landmark_num
-        bbox = self.generate_bbox(points)
+        bbox = generate_min_bbox(points)
 
         annotation = np.zeros((1, self.annotation_len))
         annotation[0, 0:4] = bbox
@@ -50,28 +73,7 @@ class Dataset300W(data.Dataset):
 
         return torch.from_numpy(img), target
 
-    @classmethod
-    def load_annotation(cls, filename):
-        with open(filename) as f:
-            lines = [line.strip() for line in f]
 
-        """Use the curly braces to find the start and end of the point data"""
-        head = lines.index('{') + 1
-        tail = lines.index('}')
 
-        """Select the point data split into coordinates"""
-        point_lines = lines[head:tail]
-        points = [point.split() for point in point_lines]
 
-        points = []
-        for point in point_lines:
-            pt = [float(x) for x in point.split()]
-            points.append(pt)
-
-        return np.array(points)
-
-    @classmethod
-    def generate_bbox(cls, points):
-        box = np.array([points[:, 0].min(), points[:, 1].min(), points[:, 0].max(), points[:, 1].max()])
-        return box
 

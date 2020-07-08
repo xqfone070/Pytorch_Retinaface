@@ -11,7 +11,7 @@ import cv2
 from models.retinaface import RetinaFace
 from utils.box_utils import decode, decode_landm
 from utils.timer import Timer
-
+from utils.image_utils import *
 
 parser = argparse.ArgumentParser(description='Retinaface')
 parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_Final.pth',
@@ -82,7 +82,8 @@ if __name__ == '__main__':
     print('Finished loading model!')
     print(net)
     cudnn.benchmark = True
-    device = torch.device("cpu" if args.cpu else "cuda")
+    #device = torch.device("cpu" if args.cpu else "cuda")
+    device = torch.device('cpu')
     net = net.to(device)
 
     # testing dataset
@@ -102,7 +103,7 @@ if __name__ == '__main__':
         img = np.float32(img_raw)
 
         # testing scale
-        target_size = 1600
+        target_size = 840
         max_size = 2150
         im_shape = img.shape
         im_size_min = np.min(im_shape[0:2])
@@ -194,22 +195,11 @@ if __name__ == '__main__':
 
         # save image
         if args.save_image:
-            for b in dets:
-                if b[4] < args.vis_thres:
-                    continue
-                text = "{:.4f}".format(b[4])
-                b = list(map(int, b))
-                cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
-                cx = b[0]
-                cy = b[1] + 12
-                cv2.putText(img_raw, text, (cx, cy),
-                            cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
+            confs = dets[:, 4]
+            bboxes = dets[:, 0:4]
+            landms = dets[:, 5:]
+            draw_bboxes(img_raw, confs, bboxes, landms, draw_landm_index=True, conf_thresh=args.vis_thres)
 
-                # landms
-                landmark_colors = cfg["landmark_colors"]
-                for i in range(landmark_num):
-                    color = landmark_colors[i] if i < len(landmark_colors) else landmark_colors[-1]
-                    cv2.circle(img_raw, (b[5+i*2], b[5+i*2+1]), 1, color, 4)
             # save image
             save_image_dir = "./results"
             if not os.path.exists(save_image_dir):
