@@ -13,6 +13,7 @@ import datetime
 import math
 from models.retinaface import RetinaFace
 from data import Dataset300W
+from collections import OrderedDict
 
 parser = argparse.ArgumentParser(description='Retinaface Training')
 parser.add_argument('--training_dataset', default='./data/widerface/train/label.txt', help='Training dataset directory')
@@ -45,6 +46,10 @@ max_epoch = cfg['epoch']
 gpu_train = cfg['gpu_train']
 landmark_num = cfg['landmark_num']
 
+# landmark_indices = [27, 36, 39, 42, 45, 33, 48, 54]
+# landmark_num = len(landmark_indices)
+# cfg['landmark_num'] = landmark_num
+
 num_workers = args.num_workers
 momentum = args.momentum
 weight_decay = args.weight_decay
@@ -54,41 +59,46 @@ training_dataset = args.training_dataset
 save_folder = args.save_folder
 
 
-net = RetinaFace(cfg=cfg)
-print("Printing net...")
-print(net)
-
-if args.resume_net is not None:
-    print('Loading resume network...')
-    state_dict = torch.load(args.resume_net)
+def load_net(net, weight_file):
+    state_dict = torch.load(weight_file)
     # create new OrderedDict that does not contain `module.`
-    from collections import OrderedDict
+
     new_state_dict = OrderedDict()
     for k, v in state_dict.items():
         head = k[:7]
         if head == 'module.':
-            name = k[7:] # remove `module.`
+            name = k[7:]  # remove `module.`
         else:
             name = k
         new_state_dict[name] = v
     net.load_state_dict(new_state_dict)
 
-if num_gpu > 1 and gpu_train:
-    net = torch.nn.DataParallel(net).cuda()
-else:
-    net = net.cuda()
-
-cudnn.benchmark = True
 
 def train():
+    # dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean), landmark_num)
+    dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean))
+    # dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean), landmark_indices)
+    dataloader = data.DataLoader(dataset, batch_size, shuffle=True,
+                                 num_workers=num_workers, collate_fn=detection_collate)
+
+    net = RetinaFace(cfg=cfg)
+    print("Printing net...")
+    print(net)
+
+    if args.resume_net is not None:
+        print('Loading resume network...')
+        load_net(net, args.resume_net)
+
+    if num_gpu > 1 and gpu_train:
+        net = torch.nn.DataParallel(net).cuda()
+    else:
+        net = net.cuda()
+
+    cudnn.benchmark = True
+
     net.train()
     epoch = 0 + args.resume_epoch
     print('Loading Dataset...')
-
-    #dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean), landmark_num)
-    dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean), landmark_num)
-    dataloader = data.DataLoader(dataset, batch_size, shuffle=True,
-                                 num_workers=num_workers, collate_fn=detection_collate)
 
     optimizer = optim.SGD(net.parameters(), lr=initial_lr, momentum=momentum, weight_decay=weight_decay)
     criterion = MultiBoxLoss(num_classes, landmark_num, 0.35, True, 0, True, 7, 0.35, False)

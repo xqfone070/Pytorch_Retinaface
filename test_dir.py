@@ -75,6 +75,11 @@ if __name__ == '__main__':
         cfg = cfg_mnet
     elif args.network == "resnet50":
         cfg = cfg_re50
+
+    # landmark_indices = [27, 36, 39, 42, 45, 33, 48, 54]
+    # landmark_num = len(landmark_indices)
+    # cfg['landmark_num'] = landmark_num
+
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
     net = load_model(net, args.trained_model, args.cpu)
@@ -82,8 +87,7 @@ if __name__ == '__main__':
     print('Finished loading model!')
     print(net)
     cudnn.benchmark = True
-    #device = torch.device("cpu" if args.cpu else "cuda")
-    device = torch.device('cpu')
+    device = torch.device("cpu" if args.cpu else "cuda")
     net = net.to(device)
 
     # testing dataset

@@ -1,7 +1,7 @@
 #!/bin/sh
 source ~/pytorch_env/bin/activate
 
-weight_file=./train_weights/Resnet50_landmark68_Final.pth
+weight_file=./train_weights/Resnet50_landmark8_Final.pth
 #dataset=/data/backup/widerface_retinaface_gt_v1.1/val/images/
 #dataset=/home/alex/data/facial_landmark/300W/01_Indoor
 dataset=/home/alex/data/facial_landmark/300w_merge_single_face/testset
