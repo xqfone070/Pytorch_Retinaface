@@ -213,7 +213,6 @@ def _mirror_facial_landmark_68(landms, width, landmark_num):
 
     # nose
     reverse_landmark_indeces(landms, 31, 36)
-    landms[31:36, :] = landms[35:30:-1]
 
     # left upper eye
     reverse_landmark_indeces(landms, 36, 40)
@@ -307,7 +306,7 @@ class preproc(object):
 
         image_t = _distort(image_t)
         image_t = _pad_to_square(image_t,self.rgb_means, pad_image_flag)
-        image_t, boxes_t, landm_t = _mirror(image_t, boxes_t, landm_t)
+        #image_t, boxes_t, landm_t = _mirror(image_t, boxes_t, landm_t)
         #show_bboxes(image_t, labels, boxes_t, landm_t, True, show_image_size=(1024, 1024))
         height, width, _ = image_t.shape
         image_t = _resize_subtract_mean(image_t, self.img_dim, self.rgb_means)
