@@ -11,20 +11,20 @@ Support customized landmark num.
 choose the images only one face
 
 
-## Training
+# Training
 train.sh
 
 https://github.com/biubug6/Pytorch_Retinaface
   ```
 
 
-## Testing
+# Testing
 test.sh
 
 https://github.com/biubug6/Pytorch_Retinaface
 
 
-## Results
-![](https://github.com/xqfone070/Pytorch_Retinaface/blob/master/images/image_0102_landmark8.png)
-![](https://github.com/xqfone070/Pytorch_Retinaface/blob/master/images/image_0102_landmark32.png)
-![](https://github.com/xqfone070/Pytorch_Retinaface/blob/master/images/image_0102_landmark68.png)
+# Results
+<p align="center"><img src="images/image_0102_landmark8.png" width="640"\></p>
+<p align="center"><img src="images/image_0102_landmark32.png" width="640"\></p>
+<p align="center"><img src="images/image_0102_landmark68.png" width="640"\></p>
