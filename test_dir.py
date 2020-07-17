@@ -76,10 +76,6 @@ if __name__ == '__main__':
     elif args.network == "resnet50":
         cfg = cfg_re50
 
-    # landmark_indices = [27, 36, 39, 42, 45, 33, 48, 54]
-    # landmark_num = len(landmark_indices)
-    # cfg['landmark_num'] = landmark_num
-
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
     net = load_model(net, args.trained_model, args.cpu)
@@ -93,14 +89,13 @@ if __name__ == '__main__':
     # testing dataset
     testset_folder = args.dataset_folder
     filelist = os.listdir(testset_folder)
+    filelist = [f for f in filelist if f.endswith(".jpg") or f.endswith(".png")]
     num_images = len(filelist)
     landmark_num = cfg["landmark_num"]
 
     _t = {'forward_pass': Timer(), 'misc': Timer()}
     for i, file in enumerate(filelist):
         file_base, file_ext = os.path.splitext(file)
-        if not file_ext == ".jpg" and not file_ext == ".png":
-            continue
 
         image_path = os.path.join(testset_folder,  file)
         img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -202,7 +197,7 @@ if __name__ == '__main__':
             confs = dets[:, 4]
             bboxes = dets[:, 0:4]
             landms = dets[:, 5:]
-            draw_bboxes(img_raw, confs, bboxes, landms, draw_landm_index=True, conf_thresh=args.vis_thres)
+            draw_bboxes(img_raw, confs, bboxes, landms, draw_landm_index=False, conf_thresh=args.vis_thres)
 
             # save image
             save_image_dir = "./results"

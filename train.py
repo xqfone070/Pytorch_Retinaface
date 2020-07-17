@@ -46,9 +46,10 @@ max_epoch = cfg['epoch']
 gpu_train = cfg['gpu_train']
 landmark_num = cfg['landmark_num']
 
-# landmark_indices = [27, 36, 39, 42, 45, 33, 48, 54]
-# landmark_num = len(landmark_indices)
-# cfg['landmark_num'] = landmark_num
+#landmark_indices = [27, 36, 39, 42, 45, 33, 48, 54]
+landmark_indices = list(range(36, 68))
+landmark_num = len(landmark_indices)
+cfg['landmark_num'] = landmark_num
 
 num_workers = args.num_workers
 momentum = args.momentum
@@ -76,8 +77,8 @@ def load_net(net, weight_file):
 
 def train():
     # dataset = WiderFaceDetection( training_dataset,preproc(img_dim, rgb_mean), landmark_num)
-    dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean))
-    # dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean), landmark_indices)
+    # dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean))
+    dataset = Dataset300W(training_dataset, preproc(img_dim, rgb_mean), landmark_indices)
     dataloader = data.DataLoader(dataset, batch_size, shuffle=True,
                                  num_workers=num_workers, collate_fn=detection_collate)
 
